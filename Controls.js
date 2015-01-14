@@ -1,6 +1,7 @@
 function Controls (container, controls) {
 	this.controls = controls || [];
 	this.byName = {};
+    this.container = container;
 
 	this.buildControls();
 }
@@ -9,16 +10,19 @@ function Controls (container, controls) {
 // Creates the given controls, includes adding them to .byName
 Controls.prototype.buildControls = function buildControls () {
 	// Empty the container
-	while (container.firstChild) {
-		container.removeChild(container.firstChild);
+	while (this.container.firstChild) {
+		this.container.removeChild(container.firstChild);
 	}
 
 	// Create each controler from its definition
 	// Add to the container and .byName
 	for (var cKey = 0; cKey < this.controls.length; cKey++) {
 		var control = this.createControl(this.controls[cKey])
-		container.appendChild(control.containerAppend);
+		this.container.appendChild(control.containerAppend);
 		this.byName[this.controls[cKey].name] = control;
+		if (typeof control.executeAfterAppend == "function") {
+			control.executeAfterAppend();
+		}
 	}
 };
 
@@ -36,10 +40,10 @@ Controls.prototype.createControl = function createControl (control) {
 // Object that holds all the contruction functions for the controllers
 // A construction object should return whatever should be stored in .byName["nameOfTheControl"]
 // The returned object should at least have:
-{
-	input: domElement,              //DomElement of which .value can be get and set,
-	containerAppend: domElement,    // Element that should be appended to the container
-}
+//{
+//	input: domElement,              //DomElement of which .value can be get and set,
+//	containerAppend: domElement,    // Element that should be appended to the container
+//}
 Controls.prototype.constructors = {};
 
 Controls.prototype.constructors.button = function createButton (control) {
@@ -61,8 +65,9 @@ Controls.prototype.constructors.button = function createButton (control) {
 	if (control.title)
 		input.title = control.title;
 
-	input.addEventListener("click", function () {
+	input.addEventListener("click", function (event) {
 		control.action(input.value);
+		event.preventDefault();
 	});
 
 	return {
@@ -122,6 +127,10 @@ Controls.prototype.constructors.integer = function createIntegerInput (control) 
 		}
 	}).containerAppend);
 
+	return {
+		input: input,
+		containerAppend: container
+	}
 };
 
 Controls.prototype.constructors.text = function createTextInput (control) {
@@ -146,6 +155,11 @@ Controls.prototype.constructors.text = function createTextInput (control) {
 	input.addEventListener("input", function () {
 		control.action(input.value);
 	});
+
+	return {
+		input: input,
+		containerAppend: input
+	}
 };
 
 Controls.prototype.constructors.color = function createControlInput (control) {
@@ -155,16 +169,22 @@ Controls.prototype.constructors.color = function createControlInput (control) {
 	input.value = control.value;
 	input.className = (control.classAppend || "") + "control-color-input";
 
-	$(input).spectrum({
-		showAlpha: true,
-		showInput: true,
-		showInitial: true,
-		preferredFormat: "hex",
-		showPalette: true,
-		maxSelectionSize: 32,
-		clickoutFiresChange: true,		
-		move: function (color) {
-			control.action(color.toHexString());
+	return {
+		input: input,
+		containerAppend: input,
+		executeAfterAppend: function () {
+			$(input).spectrum({
+				showAlpha: true,
+				showInput: true,
+				showInitial: true,
+				preferredFormat: "rgb",
+				showPalette: true,
+				maxSelectionSize: 32,
+				clickoutFiresChange: true,		
+				move: function (color) {
+					control.action(color.toHexString());
+				}
+			});
 		}
-	});
+	}
 };

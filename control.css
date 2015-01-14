@@ -1,0 +1,9 @@
+.control-button {
+	display:inline-block;
+	background:rgb(225, 225, 225);
+	cursor:pointer;
+}
+
+.control-button:hover {
+	background:rgb(215, 215, 215);
+}
